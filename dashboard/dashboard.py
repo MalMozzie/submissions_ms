@@ -21,8 +21,8 @@ img_path = "assets/dicoding.png"
 st.sidebar.image(img_path, width=150)
 st.sidebar.markdown("<br>", unsafe_allow_html=True)
 st.sidebar.title("Profile:")
-st.sidebar.markdown("• Nama: Muhammad Akmal**")
-st.sidebar.markdown("• Email: makmal1709@gmail.com**")
+st.sidebar.markdown("• Nama: Muhammad Akmal")
+st.sidebar.markdown("• Email: makmal1709@gmail.com")
 
 # Sidebar Filter Data
 st.sidebar.header("Filter Data")
