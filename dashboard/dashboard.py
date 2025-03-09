@@ -82,11 +82,15 @@ if visualization_option == 'Pengaruh Kondisi Cuaca':
         # Urutkan berdasarkan kategori
         weather_rentals = weather_rentals.sort_values('weather_label')
 
+        # Warna dari terang ke gelap
+        color_map = {'Cerah': '#4A90E2', 'Berawan': '#357ABD', 'Hujan ringan': '#2A5F9E', 'Hujan lebat': '#1D4377'}
+
         fig_weather = px.bar(
             weather_rentals, x='weather_label', y='cnt',
             title=f'Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda ({start_date} - {end_date})',
             labels={'weather_label': 'Kondisi Cuaca', 'cnt': 'Jumlah Penyewaan'},
-            color='cnt', color_continuous_scale='Blues'
+            color='weather_label',
+            color_discrete_map=color_map
         )
 
         st.plotly_chart(fig_weather)
@@ -170,31 +174,29 @@ elif visualization_option == 'Waktu Paling Sibuk':
 
 # 3. Perbandingan Hari Kerja vs Akhir Pekan
 elif visualization_option == 'Hari Kerja vs Akhir Pekan':
-    filtered_day_df['day_type'] = filtered_day_df['workingday'].map({1: 'Hari Kerja', 0: 'Akhir Pekan/Libur'})
+    # Filter berdasarkan rentang waktu dan kondisi cuaca
+    filtered_day_df_time = day_df[
+        (day_df['dteday'] >= pd.Timestamp(start_date)) &   
+        (day_df['dteday'] <= pd.Timestamp(end_date)) &
+        (day_df['weather_label'] == selected_weather)  # Filter kondisi cuaca
+    ]
 
-    # Buat figure dan axis untuk boxplot dengan latar belakang transparan
-    fig, ax = plt.subplots(figsize=(8, 5))
+    if filtered_day_df_time.empty:
+        st.warning("Tidak ada data untuk rentang waktu dan kondisi cuaca yang dipilih.")
+    else:
+        # Menentukan kategori hari
+        filtered_day_df_time['day_type'] = filtered_day_df_time['workingday'].map({1: 'Hari Kerja', 0: 'Akhir Pekan'})
 
-    # Gunakan seaborn untuk boxplot
-    sns.boxplot(x='day_type', y='cnt', data=filtered_day_df, ax=ax, 
-                palette={'Hari Kerja': 'blue', 'Akhir Pekan/Libur': 'orange'},
-                boxprops={'edgecolor': 'white'},  # Outline kotak jadi putih
-                medianprops={'color': 'white'})  # Garis median jadi putih
+        # Rata-rata penyewaan sepeda per kategori hari
+        avg_rentals = filtered_day_df_time.groupby('day_type')['cnt'].mean().reset_index()
 
-    # Ubah warna teks dan sumbu menjadi putih
-    ax.set_xlabel("Kategori Hari", color="white")
-    ax.set_ylabel("Total Penyewaan Sepeda", color="white")
-    ax.set_title("Distribusi Penyewaan Sepeda antara Hari Kerja dan Akhir Pekan", color="white")
+        # Visualisasi menggunakan plotly
+        fig_comparison = px.bar(avg_rentals, x='day_type', y='cnt',
+                                title=f'Rata-rata Penyewaan Sepeda: Hari Kerja vs Akhir Pekan ({selected_weather})',
+                                labels={'cnt': 'Jumlah Rata-rata Penyewaan'},
+                                color='day_type', color_discrete_map={'Hari Kerja': 'blue', 'Akhir Pekan': 'orange'})
 
-    # Ubah warna label sumbu jadi putih
-    ax.tick_params(axis='x', colors='white')
-    ax.tick_params(axis='y', colors='white')
-
-    # Simpan gambar dengan latar belakang transparan
-    plt.savefig("temp_plot.png", transparent=True, bbox_inches='tight', dpi=300)
-
-    # Tampilkan plot di Streamlit
-    st.image("temp_plot.png", use_container_width=True)
+        st.plotly_chart(fig_comparison)
 
 # --- Opsi Tampilkan Data Mentah ---
 if st.sidebar.checkbox("Tampilkan Data Mentah"):
